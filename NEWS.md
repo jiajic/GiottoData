@@ -1,3 +1,11 @@
+
+# GiottoData 0.2.15
+
+## Changes
+- Bumped _GiottoUtils_ requirements to 0.1.11 for improvements in `package_check()`
+- Update `getSODBDataset()`, `listSODBDatasetNames()`, `listSODBDatasetExperimentNames()` to use `package_check()` and include checks for _squidpy_ and _anndata_
+
+
 # GiottoData 0.2.14 (2024/07/24)
 
 ## Bug fixes

@@ -219,79 +219,79 @@ getSpatialDataset = function(dataset = c('ST_OB1',
 
 }
 
-#' @title listSODBDatasetNames
+#' @title List SODB dataset names
 #' @name listSODBDatasetNames
+#' @description
+#' List datasets available in the Spatial Omics DataBase (SODB). Works via the
+#' \pkg{pysodb} python package. Also requires the \pkg{anndata} and
+#' \pkg{squidpy} python packages.
+#'
 #' @param category name of category for which dataset names will be listed.
-#' @param env_name Python environment within which pysodb is installed.
-#' If it is not already installed, the user
-#' will be prompted to install `pysodb`
-#' DEFAULT: "giotto_env"
+#' @param env_name Calls [GiottoClass::set_giotto_python_path()]. Path to
+#' python binary to use or envname. Leaving as `NULL` will use the default.
 #' @details Returns a vector containing the names of datasets associated with
 #' the provided `category`.
 #' @export
-listSODBDatasetNames <- function(category = c("All",
-                                              "Spatial Transcriptomics",
-                                              "Spatial Proteomics",
-                                              "Spatial Metabolomics",
-                                              "Spatial Genomics",
-                                              "Spatial MultiOmics"),
-                                 env_name = "giotto_env"){
+listSODBDatasetNames <- function(
+        category = c(
+            "All",
+            "Spatial Transcriptomics",
+            "Spatial Proteomics",
+            "Spatial Metabolomics",
+            "Spatial Genomics",
+            "Spatial MultiOmics"
+        ),
+        env_name = NULL
+){
+    set_giotto_python_path(python_path = env_name, verbose = FALSE)
+    .check_pysodb_pkgs()
 
-  pysodb_installed = GiottoClass:::checkPythonPackage(package_name = "pysdob",
-                                                env_to_use = env_name)
+    sel_category = match.arg(
+        arg = category,
+        choices = c(
+            "All",
+            "Spatial Transcriptomics",
+            "Spatial Proteomics",
+            "Spatial Metabolomics",
+            "Spatial Genomics",
+            "Spatial MultiOmics"
+        )
+    )
 
-  if(!pysodb_installed) {
-      GiottoClass:::checkPythonPackage(github_package_url = "git+https://github.com/TencentAILabHealthcare/pysodb.git",
-                               env_to_use = env_name)
-  }
+    # Import interface_sodb, a python module for importing data from SODB
+    interface_sodb <- system.file(
+        "python", "interface_sodb.py", package = "GiottoData"
+    )
+    reticulate::source_python(interface_sodb)
 
-  sel_category = match.arg(arg = category, choices = c( "All",
-                                                        "Spatial Transcriptomics",
-                                                        "Spatial Proteomics",
-                                                        "Spatial Metabolomics",
-                                                        "Spatial Genomics",
-                                                        "Spatial MultiOmics"))
+    sodb_dataset_names = list_SODB_datasets(category = sel_category)
 
-  # Import interface_sodb, a python module for importing data from SODB
-  interface_sodb <- system.file("python",
-                                "interface_sodb.py",
-                                package = "GiottoData")
-  reticulate::source_python(interface_sodb)
-
-  sodb_dataset_names = list_SODB_datasets(category = sel_category)
-
-  return (sodb_dataset_names)
+    return(sodb_dataset_names)
 }
 
-#' @title listSODBDatasetExperimentNames
+#' @title List SODB dataset experiment names
 #' @name listSODBDatasetExperimentNames
 #' @param dataset_name name of dataset for which experiment names will be listed.
 #'        Must exist within the SODB.
-#' @param env_name Python environment within which pysodb is installed.
-#' If it is not already installed, the user
-#' will be prompted to install `pysodb`
-#' DEFAULT: "giotto_env"
+#' @inheritParams listSODBDatasetNames
 #' @details
 #' Returns a vector containing the names of experiments associated with
 #' the provided `dataset_name`.
 #'
 #' Run \preformatted{listSODBDatasetNames()} to find names of SODB datasets.
 #' @export
-listSODBDatasetExperimentNames <- function(dataset_name = NULL,
-                                           env_name = "giotto_env"){
-
-  pysodb_installed = GiottoClass:::checkPythonPackage(package_name = "pysdob",
-                                                env_to_use = env_name)
-
-  if(!pysodb_installed) {
-      GiottoClass:::checkPythonPackage(github_package_url = "git+https://github.com/TencentAILabHealthcare/pysodb.git",
-                               env_to_use = env_name)
-  }
+listSODBDatasetExperimentNames <- function(
+        dataset_name = NULL, env_name = NULL
+) {
+    set_giotto_python_path(python_path = env_name, verbose = FALSE)
+    .check_pysodb_pkgs()
 
   if(is.null(dataset_name)) {
-    stop(GiottoUtils::wrap_txt("A dataset name must be provided.
-                               Run `listSODBDatasetNames()` for dataset names.",
-                               errWidth = TRUE))
+      stop(GiottoUtils::wrap_txt(
+          "A dataset name must be provided.
+          Run `listSODBDatasetNames()` for dataset names.",
+          errWidth = TRUE)
+      )
   }
   # Import interface_sodb, a python module for importing data from SODB
   interface_sodb <- system.file("python",
@@ -299,20 +299,18 @@ listSODBDatasetExperimentNames <- function(dataset_name = NULL,
                                 package = "GiottoData")
   reticulate::source_python(interface_sodb)
 
-  sodb_dataset_experiment_names = list_SODB_dataset_experiments(dataset_name = dataset_name)
+  sodb_dataset_experiment_names = list_SODB_dataset_experiments(
+      dataset_name = dataset_name)
 
   return (sodb_dataset_experiment_names)
 }
 
 #' @title getSODBDataset
 #' @name getSODBDataset
-#' @param dataset_name name of dataset to pull from the SODB.
-#'        Must exist within the SODB.
 #' @param experiment_name name of one experiment associated with `dataset_name`
 #'        By default, the first experiment will be used.
-#' @param env_name name of the conda environment within which
-#'        pysodb is already installed, or within which installation
-#'        of pysodb will be prompted
+#' @inheritParams listSODBDatasetExperimentNames
+#' @inheritParams listSODBDatasetNames
 #' @details
 #' Interface with the Spatial Omics DataBase (SODB) using the
 #' python extension, pysodb, from TenCent.
@@ -366,42 +364,54 @@ listSODBDatasetExperimentNames <- function(dataset_name = NULL,
 #' @export
 getSODBDataset <- function(dataset_name = NULL,
                            experiment_name = "default",
-                           env_name = "giotto_env"){
-  pysodb_installed = GiottoClass:::checkPythonPackage(package = "pysodb",
-                                                env_to_use = env_name)
-  if (!pysodb_installed){
-      GiottoClass:::checkPythonPackage(github_package_url = "git+https://github.com/TencentAILabHealthcare/pysodb.git",
-                               env_to_use = env_name)
+                           env_name = NULL){
+    set_giotto_python_path(python_path = env_name, verbose = FALSE)
+    .check_pysodb_pkgs()
+
     # not returning value to variable because this
     # will crash downstream if unsuccessful.
-  }
-  if(is.null(dataset_name)) {
-    stop(GiottoUtils::wrap_txt("A dataset name must be provided.
+    if(is.null(dataset_name)) {
+        stop(GiottoUtils::wrap_txt("A dataset name must be provided.
                                Run `listSODBDatasetNames()` for dataset names.",
-                               errWidth = TRUE))
-  }
-  # Import interface_sodb, a python module for importing data from SODB
-  interface_sodb <- system.file("python",
-                                "interface_sodb.py",
-                                package = "GiottoData")
+                                   errWidth = TRUE))
+    }
+    # Import interface_sodb, a python module for importing data from SODB
+    interface_sodb <- system.file("python",
+                                  "interface_sodb.py",
+                                  package = "GiottoData")
 
-  reticulate::source_python(interface_sodb)
+    reticulate::source_python(interface_sodb)
 
-  # Try to get data from SODB using provided dataset and experiment names
-  sodb_adata = get_SODB_dataset(dataset_name = dataset_name,
-                                experiment_name = experiment_name)
+    # Try to get data from SODB using provided dataset and experiment names
+    sodb_adata = get_SODB_dataset(dataset_name = dataset_name,
+                                  experiment_name = experiment_name)
 
-  # Check validity of returned anndata object.
-  # Nothing will happen if it passes
-  # A python error will be thrown otherwise
-  check_SODB_adata(dataset_name = dataset_name,
-                   adata = sodb_adata,
-                   experiment_name = experiment_name)
+    # Check validity of returned anndata object.
+    # Nothing will happen if it passes
+    # A python error will be thrown otherwise
+    check_SODB_adata(dataset_name = dataset_name,
+                     adata = sodb_adata,
+                     experiment_name = experiment_name)
 
-  sodb_adata$write_h5ad("./SODB_dataset_for Giotto.h5ad")
+    sodb_adata$write_h5ad("./SODB_dataset_for Giotto.h5ad")
 
-  gobject = Giotto::anndataToGiotto(anndata_path = "./SODB_dataset_for Giotto.h5ad")
+    gobject = Giotto::anndataToGiotto(anndata_path = "./SODB_dataset_for Giotto.h5ad")
 
-  return (gobject)
+    return (gobject)
 
+}
+
+
+# internals ####
+
+.check_pysodb_pkgs <- function() {
+    pysodb_github <- "git+https://github.com/TencentAILabHealthcare/pysodb.git"
+    package_check(
+        pkg_name = c("pysodb", "anndata", "squidpy"),
+        repository = c(
+            paste0("pip:", pysodb_github),
+            "pip:anndata",
+            "pip:squidpy"
+        )
+    )
 }

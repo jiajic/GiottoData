@@ -7,19 +7,18 @@
 getSODBDataset(
   dataset_name = NULL,
   experiment_name = "default",
-  env_name = "giotto_env"
+  env_name = NULL
 )
 }
 \arguments{
-\item{dataset_name}{name of dataset to pull from the SODB.
+\item{dataset_name}{name of dataset for which experiment names will be listed.
 Must exist within the SODB.}
 
 \item{experiment_name}{name of one experiment associated with `dataset_name`
 By default, the first experiment will be used.}
 
-\item{env_name}{name of the conda environment within which
-pysodb is already installed, or within which installation
-of pysodb will be prompted}
+\item{env_name}{Calls [GiottoClass::set_giotto_python_path()]. Path to
+python binary to use or envname. Leaving as `NULL` will use the default.}
 }
 \description{
 getSODBDataset
